@@ -1,14 +1,8 @@
 package waterlevel
 
 import (
-	"context"
 	"time"
 )
-
-type Repository interface {
-	Load(ctx context.Context, taskName string) (watermark uint64, err error)
-	Save(ctx context.Context, taskName string, watermark uint64) error
-}
 
 type WaterLevel struct {
 	ID         int64     `gorm:"<-:create;column:id;primaryKey;autoIncrement"`

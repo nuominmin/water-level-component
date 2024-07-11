@@ -11,13 +11,13 @@
 
 	// 历史水位
 	var currWaterLevel uint64
-	if currWaterLevel, err = waterLevelManager.Load(context.Background(), TASK_NAME); err != nil {
+	if currWaterLevel, err = waterLevelManager.Load(context.Background()); err != nil {
 		panic("failed to load water level: " + err.Error())
 	}
 
 
 
-  if err = waterLevelManager.Save(context.Background(), TASK_NAME, currWaterLevel); err != nil{
+  if err = waterLevelManager.Save(context.Background(), currWaterLevel); err != nil{
 		panic("failed to save water level: " + err.Error())
   }
 ```

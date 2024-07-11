@@ -51,13 +51,13 @@ func (r *manager) Load(ctx context.Context) (waterLevel uint64, err error) {
 		return 0, nil
 	}
 
-	return wm.waterLevel, nil
+	return wm.WaterLevel, nil
 }
 
 func (r *manager) Save(ctx context.Context, waterLevel uint64) error {
 	defaultData := &WaterLevel{
 		TaskName:   r.taskName,
-		waterLevel: waterLevel,
+		WaterLevel: waterLevel,
 	}
 
 	updateData := map[string]interface{}{

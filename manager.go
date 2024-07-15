@@ -9,12 +9,12 @@ import (
 	"sync"
 )
 
-var registeredTasks = make(map[string]struct{})
+var registeredTasks = make(map[string]uint64)
 var mu sync.Mutex
 var ErrTaskAlreadyRegistered = errors.New("task already registered")
 
 type Manager interface {
-	Load(ctx context.Context) (waterLevel uint64, err error)
+	Load() (waterLevel uint64)
 	Save(ctx context.Context, waterLevel uint64) error
 }
 
@@ -23,7 +23,7 @@ type manager struct {
 	taskName string
 }
 
-func NewManager(db *gorm.DB, taskName string) (Manager, error) {
+func NewManager(ctx context.Context, db *gorm.DB, taskName string) (Manager, error) {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -31,30 +31,36 @@ func NewManager(db *gorm.DB, taskName string) (Manager, error) {
 		return nil, ErrTaskAlreadyRegistered
 	}
 
-	registeredTasks[taskName] = struct{}{}
+	wl, err := gormhelper.First[WaterLevel](db, ctx,
+		gormhelper.WithWhere("task_name = ?", taskName),
+		gormhelper.WithIgnore(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error loading water level for task %s: %w", taskName, err)
+	}
+
+	var waterLevel uint64
+	if wl != nil {
+		waterLevel = wl.WaterLevel
+	}
+
+	registeredTasks[taskName] = waterLevel
 	return &manager{
 		db:       db,
 		taskName: taskName,
 	}, nil
 }
 
-func (r *manager) Load(ctx context.Context) (waterLevel uint64, err error) {
-	var wm *WaterLevel
-	if wm, err = gormhelper.First[WaterLevel](r.db, ctx,
-		gormhelper.WithWhere("task_name = ?", r.taskName),
-		gormhelper.WithIgnore(),
-	); err != nil {
-		return 0, fmt.Errorf("error loading water level for task %s: %w", r.taskName, err)
-	}
-
-	if wm == nil {
-		return 0, nil
-	}
-
-	return wm.WaterLevel, nil
+func (r *manager) Load() (waterLevel uint64) {
+	mu.Lock()
+	defer mu.Unlock()
+	return registeredTasks[r.taskName]
 }
 
 func (r *manager) Save(ctx context.Context, waterLevel uint64) error {
+	mu.Lock()
+	defer mu.Unlock()
+
 	defaultData := &WaterLevel{
 		TaskName:   r.taskName,
 		WaterLevel: waterLevel,
@@ -70,5 +76,6 @@ func (r *manager) Save(ctx context.Context, waterLevel uint64) error {
 		return fmt.Errorf("error saving water level for task %s: %w", r.taskName, err)
 	}
 
+	registeredTasks[r.taskName] = waterLevel
 	return nil
 }

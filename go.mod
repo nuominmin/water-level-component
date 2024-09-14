@@ -3,7 +3,7 @@ module github.com/nuominmin/water-level-component
 go 1.22.5
 
 require (
-	github.com/nuominmin/gorm-helper v0.0.0-20240716074027-c0c1691f6f5f
+	github.com/nuominmin/gorm-helper v0.0.0-20240820085701-893a23b16640
 	gorm.io/gorm v1.25.10
 )
 
